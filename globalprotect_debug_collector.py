@@ -3,6 +3,8 @@ from pathlib import Path
 from datetime import datetime
 import sys
 import dotenv
+import subprocess
+from typing import Tuple
 
 # commands = [
 #     ("route print", "Route table information"),
@@ -50,3 +52,29 @@ class GlobalProtectDebugCollector:
         output_path.mkdir(exist_ok=True, parents=True)
         self.logger.info(f"Output directory: {output_path.absolute()}")
         return output_path
+
+    def run_command(self, command: str, description: str, timeout: int = 60) -> Tuple[bool, str]:
+        try:
+            self.logger.info(f"Executing: {description}")
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding='utf-8'
+            )
+            
+            if result.returncode == 0:
+                self.logger.info(f"{description} completed successfully")
+                return True, result.stdout
+            else:
+                self.logger.warning(f"{description} completed with warnings (exit code: {result.returncode})")
+                return True, result.stdout + "\n" + result.stderr
+                
+        except subprocess.TimeoutExpired:
+            self.logger.error(f"{description} timed out after {timeout} seconds")
+            return False, f"Command timed out after {timeout} seconds"
+        except Exception as e:
+            self.logger.error(f"{description} failed: {str(e)}")
+            return False, str(e)
