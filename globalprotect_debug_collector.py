@@ -6,18 +6,6 @@ import dotenv
 import subprocess
 from typing import Tuple
 
-# commands = [
-#     ("route print", "Route table information"),
-#     ("netstat -n", "Network connections"),
-#     ("wmic nicconfig list full", "Network interface configuration"),
-#     ("ipconfig /all", "IP configuration details"),
-#     ("systeminfo", "System information"),
-#     ("wmic sysdriver where state='running' list full", "Running system drivers"),
-#     ("wmic service where state='running' list full", "Running services"),
-#     ("wmic process list full", "Running processes"),
-#     ("netsh interface ipv4 show interfaces level=verbose", "Network interface details")
-# ]
-
 dotenv.dotenv_values()
 
 gp_path = Path(dotenv.dotenv_values()["GP_PATH"]) if dotenv.dotenv_values()["GP_PATH"] and Path(dotenv.dotenv_values()["GP_PATH"]).exists() else Path("C:\\Program Files\\Palo Alto Networks\\GlobalProtect")
@@ -78,3 +66,33 @@ class GlobalProtectDebugCollector:
         except Exception as e:
             self.logger.error(f"{description} failed: {str(e)}")
             return False, str(e)
+
+    def collect_system_info(self) -> None:
+        self.logger.info("Collecting system information...")
+        
+        commands = [
+            ("route print", "Route table information"),
+            ("netstat -n", "Network connections"),
+            ("wmic nicconfig list full", "Network interface configuration"),
+            ("ipconfig /all", "IP configuration details"),
+            ("systeminfo", "System information"),
+            ("wmic sysdriver where state='running' list full", "Running system drivers"),
+            ("wmic service where state='running' list full", "Running services"),
+            ("wmic process list full", "Running processes"),
+            ("netsh interface ipv4 show interfaces level=verbose", "Network interface details")
+        ]
+        
+        for command, description in commands:
+            success, output = self.run_command(command, description)
+            if success:
+                filename = f"{description.replace(' ', '_').replace('(', '').replace(')', '')}.txt"
+                filepath = self.output_dir / filename
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"Command: {command}\n")
+                    f.write(f"Description: {description}\n")
+                    f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+                    f.write("-" * 80 + "\n")
+                    f.write(output)
+                self.collection_results[description] = "Success"
+            else:
+                self.collection_results[description] = f"Failed: {output}"
