@@ -5,6 +5,7 @@ import sys
 import dotenv
 import subprocess
 from typing import Tuple
+import shutil
 
 dotenv.dotenv_values()
 
@@ -96,3 +97,19 @@ class GlobalProtectDebugCollector:
                 self.collection_results[description] = "Success"
             else:
                 self.collection_results[description] = f"Failed: {output}"
+
+    def copy_globalprotect_logs(self) -> None:
+        self.logger.info("Copying GlobalProtect log files...")
+        
+        # GlobalProtect program directory logs
+        log_patterns = ["*.log", "*.xml", "*.log.old"]
+        for pattern in log_patterns:
+            try:
+                log_files = list(self.globalprotect_path.glob(pattern))
+                for log_file in log_files:
+                    if log_file.is_file():
+                        dest_path = self.output_dir / log_file.name
+                        shutil.copy2(log_file, dest_path)
+                        self.logger.debug(f"Copied: {log_file.name}")
+            except Exception as e:
+                self.logger.warning(f"Failed to copy {pattern} files: {e}")
