@@ -113,3 +113,22 @@ class GlobalProtectDebugCollector:
                         self.logger.debug(f"Copied: {log_file.name}")
             except Exception as e:
                 self.logger.warning(f"Failed to copy {pattern} files: {e}")
+
+    def copy_setupapi_files(self) -> None:
+        self.logger.info("Copying Windows setupapi files...")
+        
+        setupapi_paths = [
+            Path("C:\\Windows\\INF\\setupapi.dev*"),
+            Path("C:\\Windows\\INF\\setupapi.app*")
+        ]
+        
+        for pattern in setupapi_paths:
+            try:
+                setupapi_files = list(Path("C:\\Windows\\INF").glob(pattern.name))
+                for file_path in setupapi_files:
+                    if file_path.is_file():
+                        dest_path = self.output_dir / file_path.name
+                        shutil.copy2(file_path, dest_path)
+                        self.logger.debug(f"Copied: {file_path.name}")
+            except Exception as e:
+                self.logger.warning(f"Failed to copy setupapi files: {e}")
