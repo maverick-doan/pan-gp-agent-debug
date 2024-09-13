@@ -10,6 +10,7 @@ import shutil
 dotenv.dotenv_values()
 
 gp_path = Path(dotenv.dotenv_values()["GP_PATH"]) if dotenv.dotenv_values()["GP_PATH"] and Path(dotenv.dotenv_values()["GP_PATH"]).exists() else Path("C:\\Program Files\\Palo Alto Networks\\GlobalProtect")
+user_appdata = Path(dotenv.dotenv_values()["USER_APPDATA"]) if dotenv.dotenv_values()["USER_APPDATA"] and Path(dotenv.dotenv_values()["USER_APPDATA"]).exists() else Path.home() / "AppData" / "Local" / "Palo Alto Networks" / "GlobalProtect"
 
 class GlobalProtectDebugCollector:
 
@@ -132,3 +133,21 @@ class GlobalProtectDebugCollector:
                         self.logger.debug(f"Copied: {file_path.name}")
             except Exception as e:
                 self.logger.warning(f"Failed to copy setupapi files: {e}")
+
+    def copy_user_logs(self) -> None:
+        self.logger.info("Copying user-specific log files...")
+        
+        if user_appdata.exists():
+            log_patterns = ["*.log", "*.log.old"]
+            for pattern in log_patterns:
+                try:
+                    log_files = list(user_appdata.glob(pattern))
+                    for log_file in log_files:
+                        if log_file.is_file():
+                            dest_path = self.output_dir / f"User_{log_file.name}"
+                            shutil.copy2(log_file, dest_path)
+                            self.logger.debug(f"Copied user log: {log_file.name}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to copy user {pattern} files: {e}")
+        else:
+            self.logger.info("User AppData GlobalProtect directory not found")
