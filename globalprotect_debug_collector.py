@@ -6,6 +6,7 @@ import dotenv
 import subprocess
 from typing import Tuple
 import shutil
+import time
 
 dotenv.dotenv_values()
 
@@ -151,3 +152,40 @@ class GlobalProtectDebugCollector:
                     self.logger.warning(f"Failed to copy user {pattern} files: {e}")
         else:
             self.logger.info("User AppData GlobalProtect directory not found")
+
+    def run_pangpsupport(self) -> None:
+        self.logger.info("Running PanGPSupport.exe...")
+        
+        pangpsupport_path = self.globalprotect_path / "PanGPSupport.exe"
+        
+        if not pangpsupport_path.exists():
+            self.logger.error("PanGPSupport.exe not found in GlobalProtect directory")
+            self.collection_results["PanGPSupport"] = "Executable not found"
+            return
+            
+        try:
+            # Run PanGPSupport with /F (force) and /Q (quiet) flags
+            result = subprocess.run(
+                [str(pangpsupport_path), "/F", "/Q"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                encoding='utf-8'
+            )
+            
+            if result.returncode == 0:
+                self.logger.info("PanGPSupport.exe completed successfully")
+                self.collection_results["PanGPSupport"] = "Success"
+                
+                self.logger.info("Waiting for logs to be generated...")
+                time.sleep(60)
+            else:
+                self.logger.warning(f"PanGPSupport.exe completed with exit code: {result.returncode}")
+                self.collection_results["PanGPSupport"] = f"Completed with warnings (exit code: {result.returncode})"
+                
+        except subprocess.TimeoutExpired:
+            self.logger.error("PanGPSupport.exe timed out")
+            self.collection_results["PanGPSupport"] = "Timed out"
+        except Exception as e:
+            self.logger.error(f"PanGPSupport.exe failed: {str(e)}")
+            self.collection_results["PanGPSupport"] = f"Failed: {str(e)}"
