@@ -7,6 +7,7 @@ import subprocess
 from typing import Tuple
 import shutil
 import time
+import json
 
 dotenv.dotenv_values()
 
@@ -189,3 +190,31 @@ class GlobalProtectDebugCollector:
         except Exception as e:
             self.logger.error(f"PanGPSupport.exe failed: {str(e)}")
             self.collection_results["PanGPSupport"] = f"Failed: {str(e)}"
+
+    def generate_summary_report(self) -> None:
+        self.logger.info("Generating summary report...")
+        
+        report_path = self.output_dir / "Collection_Summary.txt"
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write("GlobalProtect Debug Collection Summary Report\n")
+            f.write("=" * 50 + "\n\n")
+            f.write(f"Collection Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Output Directory: {self.output_dir.absolute()}\n\n")
+            
+            f.write("Collection Results:\n")
+            f.write("-" * 30 + "\n")
+            for item, status in self.collection_results.items():
+                f.write(f"{item}: {status}\n")
+                
+            f.write(f"\nTotal files collected: {len(list(self.output_dir.glob('*')))}")
+            
+        # Also generate JSON report
+        json_report_path = self.output_dir / "Collection_Summary.json"
+        with open(json_report_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                "collection_date": datetime.now().isoformat(),
+                "output_directory": str(self.output_dir.absolute()),
+                "collection_results": self.collection_results,
+                "total_files": len(list(self.output_dir.glob('*')))
+            }, f, indent=2)
