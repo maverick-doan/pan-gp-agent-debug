@@ -218,3 +218,34 @@ class GlobalProtectDebugCollector:
                 "collection_results": self.collection_results,
                 "total_files": len(list(self.output_dir.glob('*')))
             }, f, indent=2)
+
+    def run_collection(self) -> bool:
+        self.logger.info("Starting GlobalProtect debug collection...")
+        
+        try:
+            # Step 1: Run PanGPSupport
+            self.run_pangpsupport()
+            
+            # Step 2: Collect system information
+            self.collect_system_info()
+            
+            # Step 3: Copy GlobalProtect logs
+            self.copy_globalprotect_logs()
+            
+            # Step 4: Copy setupapi files
+            self.copy_setupapi_files()
+            
+            # Step 5: Copy user logs
+            self.copy_user_logs()
+            
+            # Step 6: Generate summary report
+            self.generate_summary_report()
+            
+            self.logger.info("Debug collection completed successfully!")
+            self.logger.info(f"Output directory: {self.output_dir.absolute()}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Debug collection failed: {str(e)}")
+            return False
