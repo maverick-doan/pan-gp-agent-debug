@@ -8,6 +8,8 @@ from typing import Tuple
 import shutil
 import time
 import json
+import os
+import argparse
 
 dotenv.dotenv_values()
 
@@ -249,3 +251,66 @@ class GlobalProtectDebugCollector:
         except Exception as e:
             self.logger.error(f"Debug collection failed: {str(e)}")
             return False
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="GlobalProtect Debug Collector - Automated log collection for troubleshooting",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python globalprotect_debug_collector.py
+  python globalprotect_debug_collector.py --output "C:\\MyLogs" --verbose
+  python globalprotect_debug_collector.py -o "C:\\CustomPath" -v
+        """
+    )
+    
+    parser.add_argument(
+        "-o", "--output",
+        help="Custom output directory for collected logs"
+    )
+    
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging"
+    )
+    
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="GlobalProtect Debug Collector v1.0.0"
+    )
+    
+    args = parser.parse_args()
+    
+    # Check if running as administrator
+    try:
+        is_admin = os.getuid() == 0
+    except AttributeError:
+        import ctypes
+        is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        
+    if not is_admin:
+        print("Warning: This script may require administrator privileges for full functionality.")
+        print("Some commands may fail if run without elevated permissions.\n")
+        
+    # Run the collection
+    collector = GlobalProtectDebugCollector(
+        output_dir=args.output,
+        verbose=args.verbose
+    )
+    
+    success = collector.run_collection()
+    
+    if success:
+        print(f"\nDebug collection completed successfully!")
+        print(f"Output directory: {collector.output_dir.absolute()}")
+        print(f"Check 'Collection_Summary.txt' for detailed results")
+    else:
+        print("\nDebug collection failed. Check the logs for details.")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
