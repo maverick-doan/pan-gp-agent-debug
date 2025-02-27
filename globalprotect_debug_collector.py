@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+
+"""
+GlobalProtect Debug Collector
+
+A comprehensive Python script to automate the collection of debug logs and system information
+for troubleshooting GlobalProtect Agent issues on Windows systems.
+
+Author: Maverick Doan
+"""
+
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -19,12 +30,20 @@ user_appdata = Path(dotenv.dotenv_values()["USER_APPDATA"]) if dotenv.dotenv_val
 class GlobalProtectDebugCollector:
 
     def __init__(self, output_dir: str = None, verbose: bool = False):
+        """
+        Initialise the GlobalProtect Debug Collector.
+        
+        Args:
+            output_dir: Custom output directory for logs (optional)
+            verbose: Enable verbose logging
+        """
         self.setup_logging(verbose)
         self.globalprotect_path = gp_path
         self.output_dir = self._setup_output_directory(output_dir)
         self.collection_results = {}
         
     def setup_logging(self, verbose: bool) -> None:
+        """Configure logging for the application."""
         log_level = logging.DEBUG if verbose else logging.INFO
         logging.basicConfig(
             level=log_level,
@@ -37,6 +56,7 @@ class GlobalProtectDebugCollector:
         self.logger = logging.getLogger(__name__)
         
     def _setup_output_directory(self, custom_dir: str = None) -> Path:
+        """Setup the output directory for collected logs."""
         if custom_dir:
             output_path = Path(custom_dir)
         else:
@@ -48,6 +68,17 @@ class GlobalProtectDebugCollector:
         return output_path
 
     def run_command(self, command: str, description: str, timeout: int = 60) -> Tuple[bool, str]:
+        """
+        Execute a system command and capture output.
+        
+        Args:
+            command: Command to execute
+            description: Description of what the command does
+            timeout: Command timeout in seconds
+            
+        Returns:
+            Tuple of (success, output)
+        """
         try:
             self.logger.info(f"Executing: {description}")
             result = subprocess.run(
@@ -74,6 +105,7 @@ class GlobalProtectDebugCollector:
             return False, str(e)
 
     def collect_system_info(self) -> None:
+        """Collect basic system information and network configuration."""
         self.logger.info("Collecting system information...")
         
         commands = [
@@ -104,6 +136,7 @@ class GlobalProtectDebugCollector:
                 self.collection_results[description] = f"Failed: {output}"
 
     def copy_globalprotect_logs(self) -> None:
+        """Copy GlobalProtect log files to the output directory."""
         self.logger.info("Copying GlobalProtect log files...")
         
         # GlobalProtect program directory logs
@@ -120,6 +153,7 @@ class GlobalProtectDebugCollector:
                 self.logger.warning(f"Failed to copy {pattern} files: {e}")
 
     def copy_setupapi_files(self) -> None:
+        """Copy Windows setupapi files for device installation troubleshooting."""
         self.logger.info("Copying Windows setupapi files...")
         
         setupapi_paths = [
@@ -139,6 +173,7 @@ class GlobalProtectDebugCollector:
                 self.logger.warning(f"Failed to copy setupapi files: {e}")
 
     def copy_user_logs(self) -> None:
+        """Copy user-specific GlobalProtect log files."""
         self.logger.info("Copying user-specific log files...")
         
         if user_appdata.exists():
@@ -157,6 +192,7 @@ class GlobalProtectDebugCollector:
             self.logger.info("User AppData GlobalProtect directory not found")
 
     def run_pangpsupport(self) -> None:
+        """Run PanGPSupport.exe to generate support logs."""
         self.logger.info("Running PanGPSupport.exe...")
         
         pangpsupport_path = self.globalprotect_path / "PanGPSupport.exe"
@@ -194,6 +230,7 @@ class GlobalProtectDebugCollector:
             self.collection_results["PanGPSupport"] = f"Failed: {str(e)}"
 
     def generate_summary_report(self) -> None:
+        """Generate a summary report of the collection process."""
         self.logger.info("Generating summary report...")
         
         report_path = self.output_dir / "Collection_Summary.txt"
@@ -222,6 +259,7 @@ class GlobalProtectDebugCollector:
             }, f, indent=2)
 
     def run_collection(self) -> bool:
+        """Run the complete debug collection process."""
         self.logger.info("Starting GlobalProtect debug collection...")
         
         try:
